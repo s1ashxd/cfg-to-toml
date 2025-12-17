@@ -47,7 +47,7 @@ node dist/index.js --input <входной_файл> --output <выходной_
 ```cfg 
 =begin
 Конфигурация простого веб-сервера
-=end[ConfigVisitorImpl.ts](src/ConfigVisitorImpl.ts)
+=end
 
 var port := 8080.0
 var host := 'localhost'
