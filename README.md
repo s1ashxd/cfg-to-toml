@@ -1,6 +1,6 @@
-# Компилятор конфигурационного языка в TOML
+# Компилятор конфигурационного языка в TOML c инструментом ANTLR4
 
-Это инструмент, написанный на TypeScript, который компилирует простой конфигурационный язык в формат **TOML**.
+Это инструмент, написанный на TypeScript, который компилирует простой конфигурационный язык в формат **TOML** с использованием ANTLR4.
 
 Язык поддерживает:
 - Константы, объявляемые на этапе трансляции
@@ -33,6 +33,7 @@
 git clone https://github.com/s1ashxd/cfg-to-toml.git
 cd cfg-to-toml
 npm install
+java -jar ./antlr-4.13.1-complete.jar -Dlanguage=TypeScript -visitor -o src/generated ./Config.g4
 npm run build
 ```
 
@@ -46,7 +47,7 @@ node dist/index.js --input <входной_файл> --output <выходной_
 ```cfg 
 =begin
 Конфигурация простого веб-сервера
-=end
+=end[ConfigVisitorImpl.ts](src/ConfigVisitorImpl.ts)
 
 var port := 8080.0
 var host := 'localhost'
