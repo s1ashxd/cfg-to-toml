@@ -1,17 +1,22 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { CharStream, CommonTokenStream } from 'antlr4';
+import {CharStream, CommonTokenStream, ErrorListener} from 'antlr4';
 import ConfigLexer from '../src/generated/ConfigLexer';
 import ConfigParser from '../src/generated/ConfigParser';
 import { ConfigVisitorImpl } from '../src/ConfigVisitorImpl';
 import { serializeToTOML } from '../src/serializer';
 import { Value } from '../src/types';
+import {ThrowingErrorListener} from "../src/ErrorListener";
 
 function parseSource(source: string): Map<string, Value> {
     const inputStream = new CharStream(source);
     const lexer = new ConfigLexer(inputStream);
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(new ThrowingErrorListener);
     const tokenStream = new CommonTokenStream(lexer);
     const parser = new ConfigParser(tokenStream);
+    parser.removeErrorListeners();
+    parser.addErrorListener(new ThrowingErrorListener);
     parser.buildParseTrees = true;
     const tree = parser.prog();
     const visitor = new ConfigVisitorImpl();
@@ -131,37 +136,37 @@ limits = [100.0, 200.0, 8080.0]
 var dup := 1.0
 var dup := 2.0
         `);
-            }).toThrow(/Constant 'dup' already defined/);
+            }).toThrow(/Line 3: Duplicate constant 'dup'/);
         });
 
         test('Незакрытый многострочный комментарий', () => {
             expect(() => {
                 parseSource(`=begin\nКомментарий без конца`);
-            }).toThrow(/Unclosed multi-line comment/);
+            }).toThrow(/line 1:0 token recognition error at: '=begin\\nКомментарий без конца'/);
         });
 
         test('Незакрытая строка', () => {
             expect(() => {
                 parseSource(`var s := 'незакрытая строка`);
-            }).toThrow(/Unclosed string/);
+            }).toThrow(/line 1:9 token recognition error at: ''незакрытая строка'/);
         });
 
         test('Число без дробной части', () => {
             expect(() => {
                 parseSource(`var n := 42`);
-            }).toThrow(/Expected decimal point/);
+            }).toThrow(/"line 1:9 token recognition error at: '42'/);
         });
 
         test('Некорректный синтаксис после var', () => {
             expect(() => {
                 parseSource(`var 123 := 1.0`);
-            }).toThrow(/Expected decimal point in number at line 1, column 5/);
+            }).toThrow(/line 1:4 token recognition error at: '123 '/);
         });
 
         test('Неожиданный токен', () => {
             expect(() => {
                 parseSource(`@invalid`);
-            }).toThrow(/Unexpected character '@'/);
+            }).toThrow(/line 1:0 token recognition error at: '@/);
         });
     });
 
