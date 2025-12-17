@@ -1,13 +1,21 @@
-// tests/parser.test.ts
 import * as fs from 'fs';
 import * as path from 'path';
-import { Parser } from '../src/parser';
+import { CharStream, CommonTokenStream } from 'antlr4';
+import ConfigLexer from '../src/generated/ConfigLexer';
+import ConfigParser from '../src/generated/ConfigParser';
+import { ConfigVisitorImpl } from '../src/ConfigVisitorImpl';
 import { serializeToTOML } from '../src/serializer';
 import { Value } from '../src/types';
 
 function parseSource(source: string): Map<string, Value> {
-    const parser = new Parser(source);
-    return parser.parse();
+    const inputStream = new CharStream(source);
+    const lexer = new ConfigLexer(inputStream);
+    const tokenStream = new CommonTokenStream(lexer);
+    const parser = new ConfigParser(tokenStream);
+    parser.buildParseTrees = true;
+    const tree = parser.prog();
+    const visitor = new ConfigVisitorImpl();
+    return visitor.visitProg(tree);
 }
 
 describe('Cfg в TOML компилятор', () => {

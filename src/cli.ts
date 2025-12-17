@@ -1,6 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Parser } from './parser';
+import { CharStream, CommonTokenStream } from 'antlr4';
+import ConfigLexer from './generated/ConfigLexer';
+import ConfigParser from './generated/ConfigParser';
+import { ConfigVisitorImpl } from './ConfigVisitorImpl';
 import { serializeToTOML } from './serializer';
 
 function parseArgs(): { input: string; output: string } {
@@ -26,11 +29,18 @@ export function run() {
 
     try {
         const source = fs.readFileSync(input, 'utf-8');
-        const parser = new Parser(source);
-        const constants = parser.parse();
+        const inputStream = new CharStream(source);
+        const lexer = new ConfigLexer(inputStream);
+        const tokenStream = new CommonTokenStream(lexer);
+        const parser = new ConfigParser(tokenStream);
+        parser.buildParseTrees = true;
+        const tree = parser.prog();
+
+        const visitor = new ConfigVisitorImpl();
+        const constants = visitor.visitProg(tree);
         const toml = serializeToTOML(constants);
         fs.writeFileSync(output, toml, 'utf-8');
-        console.log(`Successfully compiled ${path.basename(input)} to ${path.basename(output)}`);
+        console.log(`Successfully compiled ${path.basename(input)} → ${path.basename(output)}`);
     } catch (err: any) {
         console.error(`Error: ${err.message}`);
         process.exit(1);
